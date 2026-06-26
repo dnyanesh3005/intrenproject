@@ -8,10 +8,32 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from services.db import init_db
+from services.db import init_db, mark_email_opened, insert_link_click
 
 # Initialize DB on startup
 init_db()
+
+# Intercept tracking query parameters
+query_params = st.query_params
+if "track_open" in query_params:
+    tid = query_params["track_open"]
+    try:
+        mark_email_opened(tid)
+    except Exception as e:
+        pass
+    st.write("Pixel loaded")
+    st.stop()
+
+if "track_click" in query_params:
+    tid = query_params["track_click"]
+    url = query_params.get("url", "https://google.com")
+    try:
+        insert_link_click(tid, url)
+    except Exception as e:
+        pass
+    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
+    st.write(f"Redirecting to {url}...")
+    st.stop()
 
 # ─── Page Config ─────────────────────────────────────────────────────────────
 st.set_page_config(

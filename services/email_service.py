@@ -11,6 +11,7 @@ GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 TRACKING_BASE_URL = os.getenv("TRACKING_BASE_URL", "http://localhost:8000")
 REDIRECT_URL = os.getenv("REDIRECT_URL", "https://yourdomain.com")
+USE_STREAMLIT_TRACKING = os.getenv("USE_STREAMLIT_TRACKING", "False").lower() in ("true", "1", "t", "yes")
 
 
 def generate_tracking_id() -> str:
@@ -18,8 +19,12 @@ def generate_tracking_id() -> str:
 
 
 def build_email_html(name: str, requirement: str, tracking_id: str) -> str:
-    trackable_link = f"{TRACKING_BASE_URL}/track/click?tid={tracking_id}&url={REDIRECT_URL}"
-    pixel_url = f"{TRACKING_BASE_URL}/track/open?tid={tracking_id}"
+    if USE_STREAMLIT_TRACKING:
+        trackable_link = f"{TRACKING_BASE_URL}/?track_click={tracking_id}&url={REDIRECT_URL}"
+        pixel_url = f"{TRACKING_BASE_URL}/?track_open={tracking_id}"
+    else:
+        trackable_link = f"{TRACKING_BASE_URL}/track/click?tid={tracking_id}&url={REDIRECT_URL}"
+        pixel_url = f"{TRACKING_BASE_URL}/track/open?tid={tracking_id}"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -138,6 +143,7 @@ def send_email(lead_id: int, name: str, email: str, requirement: str):
     msg["To"] = email
 
     # Plain text fallback
+    tracking_link = f"{TRACKING_BASE_URL}/?track_click={tracking_id}&url={REDIRECT_URL}" if USE_STREAMLIT_TRACKING else f"{TRACKING_BASE_URL}/track/click?tid={tracking_id}&url={REDIRECT_URL}"
     plain_text = f"""Hi {name},
 
 Thank you for reaching out to us!
@@ -146,7 +152,7 @@ We received your requirement: "{requirement}"
 
 Our team will get back to you within 24 hours.
 
-Learn more about our services: {TRACKING_BASE_URL}/track/click?tid={tracking_id}&url={REDIRECT_URL}
+Learn more about our services: {tracking_link}
 
 Best regards,
 Team LeadTrack
